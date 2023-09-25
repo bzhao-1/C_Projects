@@ -1,0 +1,26 @@
+Bomb 11 4 Phases Defused Ben Zhao and Ntense Obono
+
+Phase 1: The first phase takes the string located at 0x4023a8 and the input string and 
+calls the strings_not_equal function. If the two strings are not equal(return value not 0), the phase calls the function
+explode bomb and does not return as it will jump to 0x400e69. However, if the return value is zero, meaning that the strings are equal
+the phase will successfully defuse as 8 bytes will be added back to $rsp stack pointer and returns.
+
+Phase 2: The second phase calls the function read 6 numbers and checks to see whether the first number read
+is 0, based on whether the stack pointer is equal to 0. Then it checks to see if the second number is 1 based on whether
+4 bytes + the stack pointer has the value one, if not bomb explodes. Then the phase runs a loop from the third integer on stack pointer to the last.
+Every time the loop runs, the current stack pointer integer is added to the previous one and compared to
+the integer on the stack pointer was two previous iterations before it, essentially next number in sequence follows fibonnaci. Bomb 
+blows up if any of the numbers do not follow the sequence otherwise returns and defuses. 
+
+Phase 3: This phase reads two integer inputs, if the input has 1 or less values, then the bomb will detonate.
+The first integer has to be less than 7 as we are comparing 0x7 to the stack pointer plus 12 bytes which is the first integer. To determine the value of the second 
+integer, we perform a series of additions and subtrations values on the value of eax until the line 
+cmp %eax,0x8(%rsp) at which point we check to see if the second number entered, which is 8 bytes plus the stack pointer, is equal to the value pointed at by the register eax.
+If the two values are not equal, the bomb detonates, otherwise, this phase is defused. 
+
+Phase 4: For phase 4, we again know that we are looking at two integer values because the sscanf input was "%d %d" and it compared 0x2 to eax and if eax
+is not 2, then the bomb detonates. We also know that the first number has to be less than or equal to 14 becasue of the lines cmpl $0xe,0xc(%rsp) jbe 0x400fe0 <phase_4+46>, and the
+bomb will detonate if the second value is greater than 14. We then call function 4 with three parameters, the registers edx(set to 14), esi(set to 0), and we move the first number in our input to edi to be used in function 4.
+Then we observe that function 4 is a recursive function, that performs a series of mathematical operations on the registers, and we saw that it returns the value in eax which is determined by the operations peformed
+on it during the recursive calls. Then the line cmp $0x1,%eax tells us that the return value of eax has to be 1 for the bomb to not detonate and thus we found the value of edi(which was the first integer input used as a parameter)
+that gave us eax as 1 from function 4. Finally, the line cmpl $0x1,0x8(%rsp) tells us that the second input, 8 bytes plus the stack pointer, has to be 1 or the bomb detonates. 
